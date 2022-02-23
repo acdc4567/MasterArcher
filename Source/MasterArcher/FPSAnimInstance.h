@@ -24,7 +24,18 @@ public:
 
 	virtual void NativeInitializeAnimation() override;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	bool bRecoil;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	bool bReloading;
+
 protected:
+
+
+	void OnFireWeapon(E_WeaponType WeaponType);
+
+	void OnStopFireWeapon(bool bAutomatic);
 
 private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
@@ -32,6 +43,8 @@ private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
 	E_WeaponType CurrentWeaponType;
+
+
 
 
 };

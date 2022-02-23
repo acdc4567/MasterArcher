@@ -13,5 +13,6 @@ UCLASS()
 class MASTERARCHER_API AAssaultRifle_WeaponBase : public AWeaponBase
 {
 	GENERATED_BODY()
-	
+	public:
+	AAssaultRifle_WeaponBase();
 };

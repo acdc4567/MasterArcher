@@ -3,3 +3,8 @@
 
 #include "AssaultRifle_WeaponBase.h"
 
+AAssaultRifle_WeaponBase::AAssaultRifle_WeaponBase(){
+    SocketName="AssaultRifle_Socket";
+    WeaponType=E_WeaponType::EWT_AssaultRifle;
+
+}

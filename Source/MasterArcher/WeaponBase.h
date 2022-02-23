@@ -71,8 +71,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
 	USkeletalMeshComponent* GunMesh;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
-	FName SocketName=TEXT("WeaponPoint");
+	
 
 	
 
@@ -80,5 +79,32 @@ protected:
 public:	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
 	E_WeaponType WeaponType;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
+	FName SocketName=TEXT("WeaponPoint");
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
+	int CurrentAmmo=30;
+
+UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
+	int MaxMagAmmo=30;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
+	int CurrentTotalAmmo=0;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
+	int MaxTotalAmmo=180;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
+	float ReloadTime=2.f;
+
+	UFUNCTION(BlueprintCallable)
+	virtual void WeaponFire();
+
+	virtual void WeaponReload();
+
+	void HasAmmoInMag(bool &HasAmmo,bool &MagFull);
+
+	bool HaveExtraAmmo();
 
 };

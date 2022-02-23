@@ -7,8 +7,10 @@
 
 
 UFPSAnimInstance::UFPSAnimInstance(){
+
     
 }
+
 
 void UFPSAnimInstance::UpdateAnimationProperties(float DeltaTime)
 {
@@ -17,12 +19,28 @@ void UFPSAnimInstance::UpdateAnimationProperties(float DeltaTime)
 		ShooterCharacter = Cast<AFPSCharacter>(TryGetPawnOwner());
 	}
     else if (ShooterCharacter){
-        CurrentWeaponType=ShooterCharacter->GetCurrentWeapon()->WeaponType;
-
+        if(ShooterCharacter->GetCurrentWeapon()){
+            CurrentWeaponType=ShooterCharacter->GetCurrentWeapon()->WeaponType;
+        }
+        bRecoil=ShooterCharacter->GetRecoil();
+        bReloading=ShooterCharacter->GetReloading();
+        
     }
 }
 
 void UFPSAnimInstance::NativeInitializeAnimation()
 {
 	ShooterCharacter = Cast<AFPSCharacter>(TryGetPawnOwner());
+    
+    
+}
+
+
+void UFPSAnimInstance::OnFireWeapon(E_WeaponType WeaponType){
+    bRecoil=1;
+}
+
+
+void UFPSAnimInstance::OnStopFireWeapon(bool bAutomatic){
+    bRecoil=0;
 }

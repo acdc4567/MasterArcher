@@ -4,6 +4,7 @@
 #include "WeaponBase.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "FPSCharacter.h"
+#include "Kismet/KismetMathLibrary.h"
 
 
 // Sets default values
@@ -25,6 +26,48 @@ void AWeaponBase::BeginPlay()
 	Super::BeginPlay();
 	
 }
+
+
+
+
+
+void AWeaponBase::WeaponFire(){
+
+	CurrentAmmo-=1;
+
+}
+
+
+
+
+void AWeaponBase::WeaponReload(){
+	CurrentAmmo=FMath::Min(MaxMagAmmo,CurrentTotalAmmo);
+	CurrentTotalAmmo-=CurrentAmmo;
+
+
+}
+
+
+void AWeaponBase::HasAmmoInMag(bool &HasAmmo,bool &MagFull){
+	
+	HasAmmo=CurrentAmmo>0;
+	MagFull=CurrentAmmo==MaxMagAmmo;
+
+
+
+
+}
+
+
+
+
+
+bool AWeaponBase::HaveExtraAmmo(){
+	
+	return CurrentTotalAmmo>0;
+
+}
+
 
 
 

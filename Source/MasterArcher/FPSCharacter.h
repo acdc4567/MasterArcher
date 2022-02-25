@@ -4,16 +4,21 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "WeaponBase.h"
 #include "FPSCharacter.generated.h"
+
 
 class AFPSPlayerController;
 class UCameraComponent;
-class AWeaponBase;
+
 class USkeletalMeshComponent;
 
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnFireWeaponSignature,E_WeaponType, WeaponType );
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStopFireWeaponSignature,bool, bAutomatic );
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInteractSignature,bool, bAutomatic );
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnInteractEndSignature,bool, bAutomatic );
+
 
 UCLASS()
 class MASTERARCHER_API AFPSCharacter : public ACharacter
@@ -60,8 +65,22 @@ private:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
 	bool bIsChangingWeapon=0;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
-	bool bHasWeapon=0;
+	
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = "true"))
+	UAnimMontage* ReloadMontage;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
+	E_WeaponSlot WeaponSlotEnum=E_WeaponSlot::EWS_FirstSlot;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
+	bool bSlot1Full;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Weapon, meta = (AllowPrivateAccess = "true"))
+	bool bSlot2Full;
+
+	
+
 
 
 
@@ -69,6 +88,14 @@ private:
 public:
 	// Sets default values for this character's properties
 	AFPSCharacter();
+
+	FTransform ClipTransform;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
+	FTransform LHandTransform;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Character)
+	bool bHasWeapon=0;
 
 protected:
 	// Called when the game starts or when spawned
@@ -80,7 +107,13 @@ protected:
 	void ShowWeapon(AWeaponBase* Weapon);
 
 	UFUNCTION(BlueprintCallable)
-	AWeaponBase* SpawnWeapon(AWeaponBase* Weapon);
+	void GrabClip();
+
+	UFUNCTION(BlueprintCallable)
+	void ReleaseClip();
+
+	UFUNCTION(BlueprintCallable)
+	void ReloadEnd();
 
 	void Fire();
 
@@ -89,6 +122,11 @@ protected:
 
 	void Reload();
 
+	void InteractKeyPressed();
+
+	void Key1Pressed();
+
+	void Key2Pressed();
 	
 
 
@@ -106,11 +144,28 @@ public:
 	FORCEINLINE bool GetRecoil() const {return bIsRecoil;}
 	FORCEINLINE bool GetReloading() const {return bIsReloading;}
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Animation)
+	USceneComponent* HandSceneComponent;
+
+	
+
+
 
 	UPROPERTY(BlueprintAssignable,Category="Events")
 	FOnFireWeaponSignature OnFireWeapon;
 
 	UPROPERTY(BlueprintAssignable,Category="Events")
 	FOnStopFireWeaponSignature OnStopFireWeapon;
+
+	UPROPERTY(BlueprintAssignable,Category="Events")
+	FOnInteractSignature OnInteract;
+
+	UPROPERTY(BlueprintAssignable,Category="Events")
+	FOnInteractEndSignature OnInteractEnd;
+
+	UFUNCTION(BlueprintCallable)
+	bool SpawnWeapon(TSubclassOf<AWeaponBase> Weapon);
+
+	void OutOfSphere();
 
 };

@@ -5,7 +5,9 @@
 #include "FPSPlayerController.h"
 #include "Camera/CameraComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "WeaponBase.h"
+#include "Engine/SkeletalMeshSocket.h"
+
+
 
 // Sets default values
 AFPSCharacter::AFPSCharacter()
@@ -22,6 +24,8 @@ AFPSCharacter::AFPSCharacter()
 	FPSArms=CreateDefaultSubobject<USkeletalMeshComponent>("FPSArms");
 	FPSArms->SetupAttachment(FollowCamera);
 
+	HandSceneComponent=CreateDefaultSubobject<USceneComponent>("HandSceneComponent");
+	HandSceneComponent->SetupAttachment(RootComponent);
 
 }
 
@@ -52,6 +56,13 @@ void AFPSCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 	PlayerInputComponent->BindAction("Fire",IE_Released,this,&AFPSCharacter::StopFire);
 
 	PlayerInputComponent->BindAction("Reload",IE_Pressed,this,&AFPSCharacter::Reload);
+	
+	PlayerInputComponent->BindAction("Interact",IE_Pressed,this,&AFPSCharacter::InteractKeyPressed);
+
+	PlayerInputComponent->BindAction("Keyboard1",IE_Pressed,this,&AFPSCharacter::Key1Pressed);
+
+	PlayerInputComponent->BindAction("Keyboard2",IE_Pressed,this,&AFPSCharacter::Key2Pressed);
+
 
 }
 
@@ -115,27 +126,89 @@ void AFPSCharacter::EquipWeapon(AWeaponBase* Weapon){
 }
 
 void AFPSCharacter::ShowWeapon(AWeaponBase* Weapon){
-	WeaponSlot_01=Weapon;
-	WeaponSlot_01->SetActorHiddenInGame(0);
+	if(WeaponSlot_01){
+		WeaponSlot_01->SetActorHiddenInGame(1);
+	}
+	else{
+		if(WeaponSlot_02){
+			WeaponSlot_02->SetActorHiddenInGame(1);
+		}
+	}
+	if(Weapon==WeaponSlot_01){
+		WeaponSlot_01->SetActorHiddenInGame(0);
+
+	}
+	else if(Weapon==WeaponSlot_02){
+		WeaponSlot_02->SetActorHiddenInGame(0);
+	}
+
+	
 
 }
 
-AWeaponBase* AFPSCharacter::SpawnWeapon(AWeaponBase* Weapon){
-	AWeaponBase* TempPickupWeapon;
+bool AFPSCharacter::SpawnWeapon(TSubclassOf<AWeaponBase> Weapon){
 	
-	TempPickupWeapon=GetWorld()->SpawnActor<AWeaponBase>(WeaponSlot_01class);
+	switch (WeaponSlotEnum)
+	{
+		case E_WeaponSlot::EWS_FirstSlot:
+			if(!bSlot1Full){
+				AWeaponBase* TempPickupWeapon;
+	
+				TempPickupWeapon=GetWorld()->SpawnActor<AWeaponBase>(Weapon);
+				
+				const USkeletalMeshSocket* HandSocket = FPSArms->GetSocketByName(TempPickupWeapon->SocketName);
+				HandSocket->AttachActor(TempPickupWeapon, FPSArms);
+				WeaponSlot_01=TempPickupWeapon;
+				bSlot1Full=1;
+				CurrentWeapon= WeaponSlot_01;
+				ShowWeapon(CurrentWeapon);
+
+				bHasWeapon=1;
+				return true;
+
+			}
+			else if(!bSlot2Full){
+				WeaponSlotEnum=E_WeaponSlot::EWS_SecondSlot;
+				SpawnWeapon(Weapon);
+				return 1;
+			}
+			else{
+				return false;
+			}
+		break;
+
+		case E_WeaponSlot::EWS_SecondSlot:
+			if(!bSlot2Full){
+				AWeaponBase* TempPickupWeaponx1;
+	
+				TempPickupWeaponx1=GetWorld()->SpawnActor<AWeaponBase>(Weapon);
+				
+				const USkeletalMeshSocket* HandSocketx1 = FPSArms->GetSocketByName(TempPickupWeaponx1->SocketName);
+				HandSocketx1->AttachActor(TempPickupWeaponx1, FPSArms);
+				WeaponSlot_02=TempPickupWeaponx1;
+				bSlot2Full=1;
+				CurrentWeapon= WeaponSlot_02;
+				ShowWeapon(CurrentWeapon);
+
+				bHasWeapon=1;
+				return 1;
+			}
+			else{
+				return 0;
+			}
+		
+		break;
+		
+		default:
+
+		break;
+	}
+	
 	
 
-	TempPickupWeapon->AttachToComponent(FPSArms,FAttachmentTransformRules::SnapToTargetNotIncludingScale,TempPickupWeapon->SocketName);
-	WeaponSlot_01=TempPickupWeapon;
-
-	CurrentWeapon= WeaponSlot_01;
-
-	bHasWeapon=1;
 
 
-
-	return TempPickupWeapon;
+	return 0;
 
 
 }
@@ -176,6 +249,9 @@ void AFPSCharacter::Fire(){
 
 
 }
+
+
+
 void AFPSCharacter::Reload(){
 	if(bHasWeapon){
 
@@ -187,9 +263,15 @@ void AFPSCharacter::Reload(){
 			if(!bMagFull){
 				bIsReloading=1;
 				bCanFire=0;
+				UAnimInstance* AnimInstance = FPSArms->GetAnimInstance();
 				CurrentWeapon->WeaponReload();
-				bIsReloading=0;
-				bCanFire=1;
+				
+				if(AnimInstance&&ReloadMontage){
+					AnimInstance->Montage_Play(ReloadMontage,1.f);
+					AnimInstance->Montage_JumpToSection(TEXT("Default"));
+
+				}
+				
 			}
 		}
 	}
@@ -205,6 +287,83 @@ void AFPSCharacter::StopFire(){
 	bIsRecoil=0;
 
 }
+
+void AFPSCharacter::GrabClip(){
+	
+	
+	int32 ClipBoneIndex{ CurrentWeapon->GetGunMesh()->GetBoneIndex(TEXT("Clip_Bone")) };
+	
+	ClipTransform = CurrentWeapon->GetGunMesh()->GetBoneTransform(ClipBoneIndex);
+	//int32 LHandBoneIndex{ FPSArms->GetBoneIndex(TEXT("b_LeftHand")) };
+	//LHandTransform=FPSArms->GetBoneTransform(LHandBoneIndex);
+	
+	
+	
+	FAttachmentTransformRules AttachmentRules(EAttachmentRule::KeepRelative, true);
+	HandSceneComponent->AttachToComponent(FPSArms, AttachmentRules, FName(TEXT("LeftHandSocket")));
+	HandSceneComponent->SetWorldTransform(ClipTransform);
+	
+
+
+	CurrentWeapon->SetMovingClip(1);
+
+
+
+}
+void AFPSCharacter::ReleaseClip(){
+	
+	CurrentWeapon->SetMovingClip(0);
+
+}
+void AFPSCharacter::ReloadEnd(){
+	bIsReloading=0;
+	bCanFire=1;
+
+
+}
+
+
+
+void AFPSCharacter::InteractKeyPressed(){
+	
+	OnInteract.Broadcast(1);
+
+
+}
+
+void AFPSCharacter::OutOfSphere(){
+	OnInteractEnd.Broadcast(1);
+}
+
+
+
+
+
+
+
+
+
+
+
+void AFPSCharacter::Key1Pressed(){
+	
+	if(bSlot1Full){
+		EquipWeapon(WeaponSlot_01);
+		WeaponSlotEnum=E_WeaponSlot::EWS_FirstSlot;
+
+	}
+
+}
+void AFPSCharacter::Key2Pressed(){
+	
+	if(bSlot2Full){
+		EquipWeapon(WeaponSlot_02);
+		WeaponSlotEnum=E_WeaponSlot::EWS_SecondSlot;
+		
+	}
+
+}
+
 
 
 

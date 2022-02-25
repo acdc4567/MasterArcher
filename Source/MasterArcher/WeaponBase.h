@@ -4,13 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Engine/DataTable.h"
 #include "WeaponBase.generated.h"
 
 class USkeletalMesh;
 class USkeletalMeshComponent;
 class AFPSCharacter;
-
+class AImpactEffex;
 
 UENUM(BlueprintType)
 enum class E_WeaponType : uint8
@@ -27,8 +26,23 @@ enum class E_WeaponType : uint8
 	
 };
 
+
+
+UENUM(BlueprintType)
+enum class E_WeaponSlot : uint8
+{
+	EWS_FirstSlot UMETA(DisplayName = "FirstSlot"),
+	EWS_SecondSlot UMETA(DisplayName = "SecondSlot"),
+	
+	EWS_MAX UMETA(DisplayName = "DefaultMAX")
+	
+};
+
+
+
+
 USTRUCT(BlueprintType)
-struct FSTR_WeaponData : public FTableRowBase
+struct FSTR_WeaponData 
 {
 	GENERATED_BODY()
 
@@ -48,6 +62,21 @@ struct FSTR_WeaponData : public FTableRowBase
 	
 };
 
+USTRUCT(BlueprintType)
+struct FSTR_AmmoData 
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float Damage;
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float CriticalHitChance;
+
+
+};
+
 
 
 UCLASS()
@@ -55,6 +84,8 @@ class MASTERARCHER_API AWeaponBase : public AActor
 {
 	GENERATED_BODY()
 private:
+	
+
 
 
 public:	
@@ -65,18 +96,43 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
-	USceneComponent* SceneComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item, meta = (AllowPrivateAccess = "true"))
+	bool bMovingClip;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item,meta=(AllowPrivateAccess="true"))
 	USkeletalMeshComponent* GunMesh;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item,meta=(AllowPrivateAccess="true"))
+	FName ClipBoneName=TEXT("Clip_Bone");
 	
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item,meta=(AllowPrivateAccess="true"))
+	float BulletSpread;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item,meta=(AllowPrivateAccess="true"))
+	FSTR_AmmoData AmmoData;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	UParticleSystem* TrailFX;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	UParticleSystem* ImpactParticles;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Combat, meta = (AllowPrivateAccess = "true"))
+	UParticleSystem* BeamParticles;
+
+	bool TraceUnderCrosshairs(FHitResult& OutHitResult,FVector& OutHitLocation); 
 	
+	void SendBullet();
 
+	bool GetBeamEndLocation(const FVector& MuzzleSocketLocation,FHitResult& OutHitResult);
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Impact)
+	TSubclassOf<AImpactEffex> IE_HitClass;
 
 public:	
+// Called every frame
+	virtual void Tick(float DeltaTime) override;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
 	E_WeaponType WeaponType;
 
@@ -86,7 +142,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
 	int CurrentAmmo=30;
 
-UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
 	int MaxMagAmmo=30;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
@@ -98,6 +154,10 @@ UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
 	float ReloadTime=2.f;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
+	bool bFiring=0;
+
+
 	UFUNCTION(BlueprintCallable)
 	virtual void WeaponFire();
 
@@ -106,5 +166,18 @@ UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Item)
 	void HasAmmoInMag(bool &HasAmmo,bool &MagFull);
 
 	bool HaveExtraAmmo();
+
+
+
+	virtual void SetMovingClip(bool Value);
+
+	FORCEINLINE USkeletalMeshComponent* GetGunMesh() const { return GunMesh; } 
+
+	FORCEINLINE FName GetClipBoneName() const { return ClipBoneName; } 
+
+	FORCEINLINE bool GetMovingClip() const { return bMovingClip; } 
+
+	FORCEINLINE bool GetFiring() const { return bFiring; } 
+
 
 };
